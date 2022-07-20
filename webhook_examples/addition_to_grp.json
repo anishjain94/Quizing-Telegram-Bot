@@ -1,0 +1,38 @@
+{
+  "update_id": 298224627,
+  "my_chat_member": {
+    "chat": {
+      "id": -739266517,
+      "title": "temp1",
+      "type": "group",
+      "all_members_are_administrators": true
+    },
+    "from": {
+      "id": 1919968414,
+      "is_bot": false,
+      "first_name": "Anish",
+      "last_name": "Jain",
+      "username": "Humble_Chap",
+      "language_code": "en"
+    },
+    "date": 1658336487,
+    "old_chat_member": {
+      "user": {
+        "id": 5580847574,
+        "is_bot": true,
+        "first_name": "quizzer",
+        "username": "quizzer1bot"
+      },
+      "status": "left"
+    },
+    "new_chat_member": {
+      "user": {
+        "id": 5580847574,
+        "is_bot": true,
+        "first_name": "quizzer",
+        "username": "quizzer1bot"
+      },
+      "status": "member"
+    }
+  }
+}

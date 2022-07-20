@@ -26,13 +26,13 @@ class handler(BaseHTTPRequestHandler):
         print(res)
 
         # send message to telegram
-        token = str(os.environ.get("botToken"))
-        updater = Updater(token)
-        updater.bot.send_message(
-            res["message"]["chat"]["id"], res["message"]["text"])
+        # token = str(os.environ.get("botToken"))
+        # updater = Updater(token)
+        # updater.bot.send_message(
+        #     res["message"]["chat"]["id"], res["message"]["text"])
         # telegram.Update.message.reply_to_message.text = res["message"]
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
-        self.end_headers()
+        # self.end_headers()
         return

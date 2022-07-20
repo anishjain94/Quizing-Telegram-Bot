@@ -1,0 +1,22 @@
+{
+  "update_id": 298224628,
+  "message": {
+    "message_id": 22,
+    "from": {
+      "id": 1919968414,
+      "is_bot": false,
+      "first_name": "Anish",
+      "last_name": "Jain",
+      "username": "Humble_Chap",
+      "language_code": "en"
+    },
+    "chat": {
+      "id": -739266517,
+      "title": "temp1",
+      "type": "group",
+      "all_members_are_administrators": true
+    },
+    "date": 1658336487,
+    "group_chat_created": true
+  }
+}
