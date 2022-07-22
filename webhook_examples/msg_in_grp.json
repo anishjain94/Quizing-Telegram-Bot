@@ -1,0 +1,17 @@
+{
+  "update_id": 298224640,
+  "message": {
+    "message_id": 4,
+    "from": {
+      "id": 1919968414,
+      "is_bot": false,
+      "first_name": "Anish",
+      "last_name": "Jain",
+      "username": "Humble_Chap",
+      "language_code": "en"
+    },
+    "chat": { "id": -1001530624354, "title": "temp1", "type": "supergroup" },
+    "date": 1658428890,
+    "text": "grp1"
+  }
+}

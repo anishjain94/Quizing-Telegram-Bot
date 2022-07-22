@@ -14,10 +14,19 @@ class handler(BaseHTTPRequestHandler):
         updater.bot.setWebhook(
             str(os.environ.get("webhookUrl"))
         )
+
+        if self.path == "/sendMsg":
+            sendMsg(self)
+
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
         return
+
+# TODO: Now we have to keep track of all the groups that the bot has been added to and store them in redis.
+# TODO: Now when we receive a get request on sendmsg endpoint, we would send a word to all the groups.
+# TODO: After that we keep track of the messages that we have received and from which grps we have received them.
+# TODO: We will decrease the count of that keyword of that group and if it reaches to 0 from 3, we will delete that group from the list.
 
     def do_POST(self):
         content_len = int(self.headers.get('Content-Length'))
@@ -34,5 +43,9 @@ class handler(BaseHTTPRequestHandler):
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
-        # self.end_headers()
+        self.end_headers()
         return
+
+
+def sendMsg(self):
+    return
