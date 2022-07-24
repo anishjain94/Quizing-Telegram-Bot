@@ -3,10 +3,11 @@ import os
 from random import randint
 from turtle import back
 import requests
-from environment import *
-
 from PIL import ImageDraw
 from PIL import ImageFont
+
+
+from config.environment import *
 
 
 def getWord():
@@ -26,8 +27,10 @@ def generateWords():
         f.close()
 
 
+# Generate better imgage
 def generateImage(word):
     I1 = ImageDraw.Draw(backgroundImg)
-    myFont = ImageFont.truetype(staticFilesPath + 'font.ttf', 30)
-    I1.text((50, 50), word, font=myFont, fill=(0, 0, 0))
-    backgroundImg.save(staticFilesPath + 'toSend.jpg')
+    myFont = ImageFont.truetype(staticFilesPath + '/font.ttf', 30)
+    I1.text((100, 100), word, font=myFont, fill=(0, 0, 0))
+    os.remove(imageToSendPath)
+    backgroundImg.save(imageToSendPath)

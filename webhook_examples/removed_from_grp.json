@@ -1,5 +1,5 @@
 {
-  "update_id": 298224634,
+  "update_id": 298224642,
   "my_chat_member": {
     "chat": { "id": -1001530624354, "title": "temp1", "type": "supergroup" },
     "from": {
@@ -10,7 +10,7 @@
       "username": "Humble_Chap",
       "language_code": "en"
     },
-    "date": 1658336746,
+    "date": 1658555583,
     "old_chat_member": {
       "user": {
         "id": 5580847574,
@@ -38,10 +38,7 @@
         "first_name": "quizzer",
         "username": "quizzer1bot"
       },
-      "status": "kicked",
-      "until_date": 0
+      "status": "left"
     }
   }
 }
-
-// Match userid in new_chat_member and status = "kicked" that means bot was kicked out.

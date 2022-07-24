@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 import time
 from telegram.ext import Updater
-from api.wehbooks import handler
+from api.webhooks import handler
 
 load_dotenv()
 
