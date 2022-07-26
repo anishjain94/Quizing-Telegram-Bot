@@ -2,6 +2,7 @@ from cmath import log
 from distutils.log import Log
 from http.server import BaseHTTPRequestHandler
 import json
+import time
 import redis
 import telegram
 import os
@@ -14,6 +15,7 @@ from config.environment import *
 from api.helpers import *
 
 
+# TODO: Ask how to reduce the if conditions..
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         token = str(botToken)
@@ -51,7 +53,7 @@ class handler(BaseHTTPRequestHandler):
             handleAdditionToGroup(myChatMember)
 
         elif message != None:
-            handleMessage(message)
+            handleReceivedMessage(message)
 
         else:
             logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
@@ -71,15 +73,17 @@ def sendMsg(self):
 
     # Redis Keys
     # group_groupID = word
-    # {word}_groupId = count till now
-    for key, value in groupInfo.items():
-        value = str(value.decode())
-        redisGrpId = "group_" + value
-        redisWordGrpCount = word + "_" + value
-        bot.send_photo(value, open(imageToSendPath, "rb"))
+    # {word}_groupId = {count till now, timestamp}
+    # {word_timestamp} = timestamp of send set word
+    for key, groupId in groupInfo.items():
+        groupId = str(groupId)
+        redisGrpId = "group_" + groupId
+        redisWordGrpCount = word + "_" + groupId
+        bot.send_photo(groupId, open(imageToSendPath, "rb"))
         redisClient.set(redisGrpId, word)
         redisClient.expire(redisGrpId, 216000)
-        redisClient.set(redisWordGrpCount, 3)
+        redisClient.hmset(redisWordGrpCount, {
+            "count": 3, "timestamp": int(time.time())})
         redisClient.expire(redisWordGrpCount, 216000)
 
     self.send_response(200)
@@ -112,18 +116,43 @@ def handleRemovalFromGroup(res: dict):
         print(res)
 
 
-def handleMessage(message: dict):
+def handleReceivedMessage(message: dict):
     groupId = str(message["chat"]["id"])
     redisGrpId = "group_" + groupId
-    word = redisClient.get(redisGrpId).decode(
-    ) if redisClient.get(redisGrpId) != None else None
+    word = redisClient.get(redisGrpId) if redisClient.get(
+        redisGrpId) != None else None
 
+    whenMsgWasReceived = int(message["date"])
     if word != None:
         redisWordGrpId = word + "_" + groupId
-        wordCount = int(redisClient.get(redisWordGrpId).decode())
+        wordDataObj = redisClient.hgetall(redisWordGrpId)
+        whenWordWasSent = int(wordDataObj["timestamp"])
 
-        if wordCount > 0:
-            redisClient.decr(redisWordGrpId)
-        if wordCount <= 1:
-            redisClient.delete(redisWordGrpId)
-            redisClient.delete(redisGrpId)
+        wordDataObj["count"] = int(wordDataObj["count"])
+        if wordDataObj["count"] > 0:
+            wordDataObj["count"] -= 1
+            redisClient.hmset(redisWordGrpId, wordDataObj)
+
+            setScoreOfUser(message, whenWordWasSent - whenMsgWasReceived)
+
+            if wordDataObj["count"] <= 1:
+                redisClient.delete(redisWordGrpId)
+                redisClient.delete(redisGrpId)
+
+
+def setScoreOfUser(message: dict, timeDiff: int):
+
+    redisKey = "user_" + message["from"]["username"] + \
+        "_" + str(message["chat"]["id"])
+
+    if(timeDiff < 100):
+        score = 10
+        redisClient.incrby(redisKey, score)
+
+    elif(timeDiff < 300):
+        score = 5
+        redisClient.incrby(redisKey, score)
+
+    else:
+        score = 1
+        redisClient.incrby(redisKey, score)
