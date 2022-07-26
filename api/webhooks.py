@@ -13,12 +13,6 @@ from urllib.parse import urlparse, parse_qs
 from config.environment import *
 from api.helpers import *
 
-# TODO: Now we have to keep track of all the groups that the bot has been added to and store them in redis using hash.
-# TODO: Now when we receive a get request on sendmsg endpoint, we would send a word to all the groups that the bot has been added to.
-# TODO: After that we keep track of the messages that we have received and from which grps we have received them.
-# TODO: We will decrease the count of that keyword of that group and if it reaches to 0 from 3, we will delete that group from the list.
-# TODO: Handle addition and removal from group
-
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -56,6 +50,9 @@ class handler(BaseHTTPRequestHandler):
         elif myChatMember != None and newChatMember["status"] == "member":
             handleAdditionToGroup(myChatMember)
 
+        elif message != None:
+            handleMessage(message)
+
         else:
             logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
 
@@ -66,18 +63,24 @@ class handler(BaseHTTPRequestHandler):
 
 
 def sendMsg(self):
-
     word = getWord()
-    print(word)
     generateImage(word)
-
+    print(word)
     groupInfo = redisClient.hgetall(groupData)
     bot = telegram.Bot(token=botToken)
 
-    # bot.send_photo("-1001530624354", open(imageToSendPath, "rb"))
-
+    # Redis Keys
+    # group_groupID = word
+    # {word}_groupId = count till now
     for key, value in groupInfo.items():
+        value = str(value.decode())
+        redisGrpId = "group_" + value
+        redisWordGrpCount = word + "_" + value
         bot.send_photo(value, open(imageToSendPath, "rb"))
+        redisClient.set(redisGrpId, word)
+        redisClient.expire(redisGrpId, 216000)
+        redisClient.set(redisWordGrpCount, 3)
+        redisClient.expire(redisWordGrpCount, 216000)
 
     self.send_response(200)
     self.send_header('Content-Type', 'text/plain')
@@ -107,3 +110,20 @@ def handleRemovalFromGroup(res: dict):
         res = redisClient.hdel(
             groupData, message["chat"]["title"])
         print(res)
+
+
+def handleMessage(message: dict):
+    groupId = str(message["chat"]["id"])
+    redisGrpId = "group_" + groupId
+    word = redisClient.get(redisGrpId).decode(
+    ) if redisClient.get(redisGrpId) != None else None
+
+    if word != None:
+        redisWordGrpId = word + "_" + groupId
+        wordCount = int(redisClient.get(redisWordGrpId).decode())
+
+        if wordCount > 0:
+            redisClient.decr(redisWordGrpId)
+        if wordCount <= 1:
+            redisClient.delete(redisWordGrpId)
+            redisClient.delete(redisGrpId)
