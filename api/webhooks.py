@@ -1,5 +1,4 @@
 from cmath import log
-from distutils.log import Log
 from http.server import BaseHTTPRequestHandler
 import json
 import time
@@ -7,15 +6,24 @@ import redis
 import telegram
 import os
 import logging as logger
-from infra.redis import redisClient
 from telegram.ext import Updater
 from urllib.parse import urlparse, parse_qs
+from telegram.update import Update
+from telegram.ext.callbackcontext import CallbackContext
+from telegram.ext.commandhandler import CommandHandler
+from telegram.ext.messagehandler import MessageHandler
+from telegram.ext.filters import Filters
+
 
 from config.environment import *
 from api.helpers import *
+from .command_handlers import *
+from infra.redis import redisClient
+from infra.telegram import *
+
+# TODO: Ask how to reduce the if conditions.. -- reducer and dispatcher
 
 
-# TODO: Ask how to reduce the if conditions..
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         token = str(botToken)
@@ -23,6 +31,8 @@ class handler(BaseHTTPRequestHandler):
         updater.bot.setWebhook(
             str(webhookUrl)
         )
+        updater.dispatcher.add_handler(
+            CommandHandler('start', startCommandHandler))
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
@@ -117,6 +127,11 @@ def handleRemovalFromGroup(res: dict):
 
 
 def handleReceivedMessage(message: dict):
+
+    if message.get("new_chat_title", None) != None:
+        # Name of the group was changed
+        return
+
     groupId = str(message["chat"]["id"])
     redisGrpId = "group_" + groupId
     word = redisClient.get(redisGrpId) if redisClient.get(
@@ -156,3 +171,8 @@ def setScoreOfUser(message: dict, timeDiff: int):
     else:
         score = 1
         redisClient.incrby(redisKey, score)
+
+
+def startCommandHandler(update: Update, context: CallbackContext, args):
+    update.message.reply_text(
+        "Welcome to the quizzing bot")

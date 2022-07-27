@@ -17,5 +17,9 @@ redisHost = os.environ.get("REDIS_HOST")
 redisPort = os.environ.get("REDIS_PORT")
 redisPassword = os.environ.get("REDIS_PASSWORD")
 
+
+HOST_NAME = "localhost"
+PORT_NUMBER = 8000
+
 # TODO: update this.
 groupData = str(botId) + "_group_data"

@@ -1,7 +1,7 @@
 {
-  "update_id": 298224625,
+  "update_id": 298224656,
   "message": {
-    "message_id": 19,
+    "message_id": 38,
     "from": {
       "id": 1919968414,
       "is_bot": false,
@@ -11,13 +11,12 @@
       "language_code": "en"
     },
     "chat": {
-      "id": 1919968414,
-      "first_name": "Anish",
-      "last_name": "Jain",
-      "username": "Humble_Chap",
-      "type": "private"
+      "id": -620006425,
+      "title": "temp1",
+      "type": "group",
+      "all_members_are_administrators": true
     },
-    "date": 1658332809,
-    "text": "hehe"
+    "date": 1658859373,
+    "new_chat_title": "temp1"
   }
 }
