@@ -19,7 +19,7 @@ from config.environment import *
 from api.helpers import *
 from infra.redis import redisClient
 from infra.telegram import *
-
+from config.constants import *
 # TODO: replace if conditions with reducer and dispatcher
 # {"group1":"-620006425","temp1":"-1001530624354"}
 
@@ -48,6 +48,7 @@ class handler(BaseHTTPRequestHandler):
 
         if self.path == "/sendMsg":
             sendMsg(self)
+            return
 
         myChatMember = res.get("my_chat_member", None)
         newChatMember = myChatMember.get(
@@ -55,7 +56,7 @@ class handler(BaseHTTPRequestHandler):
 
         message = res.get("message", None)
 
-        if isLeftChatMember(message) != None:
+        if isLeftChatMember(message) != False:
             handleRemovalFromGroup(res)
 
         elif myChatMember != None and newChatMember["status"] == "member":
@@ -67,7 +68,7 @@ class handler(BaseHTTPRequestHandler):
         else:
             logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
 
-        self.acknowledgeWebhook(self)
+        self.acknowledgeWebhook()
         return
 
 
@@ -76,8 +77,6 @@ def sendMsg(self):
     generateImage(word)
     print(word)
     groupInfo = redisClient.hgetall(groupData)
-    bot = telegram.Bot(token=botToken)
-
     # Redis Keys
     # group:groupID = word
     # {word}:groupId = {count till now, timestamp}
@@ -86,7 +85,7 @@ def sendMsg(self):
         # groupId = str(groupId)
         redisGrpId = "group:" + groupId
         redisWordGrpCount = word + ":" + groupId
-        bot.send_photo(groupId, open(imageToSendPath, "rb"))
+        updater.bot.send_photo(groupId, open(imageToSendPath, "rb"))
         redisClient.set(redisGrpId, word)
         redisClient.expire(redisGrpId, 216000)
         redisClient.hmset(redisWordGrpCount, {
@@ -122,7 +121,6 @@ def handleReceivedMessage(self, message: dict):
         return
 
     if checkIfCommand(message):
-
         if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(botName)) or message["text"] == ("/start" + str(botName)):
             handleHelp(message)
             self.acknowledgeWebhook()
@@ -137,14 +135,16 @@ def handleReceivedMessage(self, message: dict):
             getLeaderboardFromRedis(message)
             self.acknowledgeWebhook()
             return
+        return
 
     groupId = str(message["chat"]["id"])
     redisGrpId = "group:" + groupId
-    word = redisClient.get(redisGrpId) if redisClient.get(
-        redisGrpId) != None else None
+    word = redisClient.get(redisGrpId)
 
     whenMsgWasReceived = int(message["date"])
-    if word != None:
+    messageReceived = message.get("text", None)
+
+    if word != None and (messageReceived is not None and messageReceived == word):
         redisWordGrpId = word + ":" + groupId
         wordDataObj = redisClient.hgetall(redisWordGrpId)
         whenWordWasSent = int(wordDataObj["timestamp"])
@@ -163,11 +163,11 @@ def handleReceivedMessage(self, message: dict):
 
 def setScoreOfUser(message: dict, timeDiff: int):
 
-    redisKey = "user:" + message["from"]["id"] + \
+    redisKey = "user:" + str(message["from"]["id"]) + \
         ":" + str(message["chat"]["id"])
 
     redisClient.hmset(
-        redisKey, {"userName": message["from"]["userName"]})
+        redisKey, {"userName": message["from"]["username"]})
 
     if(timeDiff < 100):
         score = 10
@@ -183,14 +183,14 @@ def setScoreOfUser(message: dict, timeDiff: int):
 
 
 def getUserScoreFromRedis(message: dict):
-    userId = message["from"]["id"]
-    redisKey = "user_" + userId + \
-        "_" + str(message["chat"]["id"])
+    userId = str(message["from"]["id"])
+    redisKey = "user:" + userId + \
+        ":" + str(message["chat"]["id"])
 
-    score = redisClient.hget(redisKey)
+    score = redisClient.hgetall(redisKey)
     if score != None:
         updater.bot.send_message(
-            message["chat"]["id"], "{name} your score is: {score}".format(name=score["userName"], score=score["score"]))
+            message["chat"]["id"], scoreIs.format(name=score["userName"], score=score["score"]))
 
 
 def handleHelp(message: dict) -> None:
@@ -209,7 +209,7 @@ def getLeaderboardFromRedis(message: dict) -> None:
     userScore = dict()
 
     for key in redisClient.scan_iter(redisKey):
-        redisData = redisClient.get(key)
+        redisData = redisClient.hgetall(key)
         userScore[redisData["userName"]] = redisData["score"]
 
     sortedUserScore = sorted(
@@ -218,8 +218,8 @@ def getLeaderboardFromRedis(message: dict) -> None:
     leaderboardMsg = "🏆 Leaderboard 🏆 \n\n"
 
     for i in range(0, len(sortedUserScore)):
-        leaderboardMsg += "{name} - {score} \n".format(
-            name=sortedUserScore[i][0], score=sortedUserScore[i][1])
+        leaderboardMsg += "@{userName} - {score} \n".format(
+            userName=sortedUserScore[i][0], score=sortedUserScore[i][1])
 
     if sortedUserScore == []:
         leaderboardMsg += "No users yet!"
