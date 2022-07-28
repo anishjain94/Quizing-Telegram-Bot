@@ -19,7 +19,6 @@ from telegram.ext.filters import Filters
 
 from config.environment import *
 from api.helpers import *
-from api.command_handlers import *
 
 
 token = str(botToken)

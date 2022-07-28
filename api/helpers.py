@@ -1,4 +1,5 @@
 from cgi import print_exception
+from html import entities
 import os
 from random import randint
 from turtle import back
@@ -34,3 +35,21 @@ def generateImage(word):
     I1.text((100, 100), word, font=myFont, fill=(0, 0, 0))
     os.remove(imageToSendPath)
     backgroundImg.save(imageToSendPath)
+
+
+def checkIfCommand(message) -> bool:
+    entities = message.get("entities", None)
+    if entities != None and entities[0]["type"] == "bot_command":
+        return True
+    else:
+        return False
+
+
+def isLeftChatMember(message: dict) -> bool:
+    leftChatMember = message.get(
+        "left_chat_participant") if message != None else None
+
+    if leftChatMember is None:
+        return False
+    else:
+        return True

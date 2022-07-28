@@ -1,4 +1,5 @@
 from cmath import log
+from http.client import RemoteDisconnected
 from http.server import BaseHTTPRequestHandler
 import json
 import time
@@ -14,29 +15,29 @@ from telegram.ext.commandhandler import CommandHandler
 from telegram.ext.messagehandler import MessageHandler
 from telegram.ext.filters import Filters
 
-
 from config.environment import *
 from api.helpers import *
-from .command_handlers import *
 from infra.redis import redisClient
 from infra.telegram import *
 
-# TODO: Ask how to reduce the if conditions.. -- reducer and dispatcher
+# TODO: replace if conditions with reducer and dispatcher
+# {"group1":"-620006425","temp1":"-1001530624354"}
 
 
 class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        token = str(botToken)
-        updater = Updater(token)
-        updater.bot.setWebhook(
-            str(webhookUrl)
-        )
-        updater.dispatcher.add_handler(
-            CommandHandler('start', startCommandHandler))
 
+    def acknowledgeWebhook(self):
         self.send_response(200)
         self.send_header('Content-Type', 'text/plain')
         self.end_headers()
+
+    def do_GET(self):
+        token = str(botToken)
+        updater = Updater(token, use_context=True)
+        updater.bot.setWebhook(
+            str(webhookUrl)
+        )
+        self.acknowledgeWebhook()
         return
 
     def do_POST(self):
@@ -53,24 +54,20 @@ class handler(BaseHTTPRequestHandler):
             "new_chat_member", None) if myChatMember != None else None
 
         message = res.get("message", None)
-        leftChatMember = message.get(
-            "left_chat_participant") if message != None else None
 
-        if leftChatMember != None:
+        if isLeftChatMember(message) != None:
             handleRemovalFromGroup(res)
 
         elif myChatMember != None and newChatMember["status"] == "member":
             handleAdditionToGroup(myChatMember)
 
         elif message != None:
-            handleReceivedMessage(message)
+            handleReceivedMessage(self, message)
 
         else:
             logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
 
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
-        self.end_headers()
+        self.acknowledgeWebhook(self)
         return
 
 
@@ -82,13 +79,13 @@ def sendMsg(self):
     bot = telegram.Bot(token=botToken)
 
     # Redis Keys
-    # group_groupID = word
-    # {word}_groupId = {count till now, timestamp}
-    # {word_timestamp} = timestamp of send set word
+    # group:groupID = word
+    # {word}:groupId = {count till now, timestamp}
+    # {word:timestamp} = timestamp of send set word
     for key, groupId in groupInfo.items():
-        groupId = str(groupId)
-        redisGrpId = "group_" + groupId
-        redisWordGrpCount = word + "_" + groupId
+        # groupId = str(groupId)
+        redisGrpId = "group:" + groupId
+        redisWordGrpCount = word + ":" + groupId
         bot.send_photo(groupId, open(imageToSendPath, "rb"))
         redisClient.set(redisGrpId, word)
         redisClient.expire(redisGrpId, 216000)
@@ -96,9 +93,7 @@ def sendMsg(self):
             "count": 3, "timestamp": int(time.time())})
         redisClient.expire(redisWordGrpCount, 216000)
 
-    self.send_response(200)
-    self.send_header('Content-Type', 'text/plain')
-    self.end_headers()
+    self.acknowledgeWebhook()
 
     return
 
@@ -107,39 +102,50 @@ def handleAdditionToGroup(myChatMember: dict):
     newChatMember = myChatMember.get("new_chat_member", None)
 
     if newChatMember != None and str(newChatMember["user"]["id"]) == botId:
-        logger.info("Bot added to a group")
 
         redisClient.hset(
             groupData, myChatMember["chat"]["title"], myChatMember["chat"]["id"])
 
-        logger.info("added group id to redis")
-
 
 def handleRemovalFromGroup(res: dict):
-    logger.debug("removing group Id from redis")
     message = res.get("message", None)
     leftChatMember = res["message"]["left_chat_participant"]
 
     if str(leftChatMember["id"]) == botId:
         res = redisClient.hdel(
             groupData, message["chat"]["title"])
-        print(res)
 
 
-def handleReceivedMessage(message: dict):
-
+def handleReceivedMessage(self, message: dict):
     if message.get("new_chat_title", None) != None:
-        # Name of the group was changed
+        self.acknowledgeWebhook(self)
         return
 
+    if checkIfCommand(message):
+
+        if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(botName)) or message["text"] == ("/start" + str(botName)):
+            handleHelp(message)
+            self.acknowledgeWebhook()
+            return
+
+        elif message["text"] == "/myscore" or message["text"] == ("/myscore" + str(botName)):
+            getUserScoreFromRedis(message)
+            self.acknowledgeWebhook()
+            return
+
+        elif message["text"] == "/leaderboard" or message["text"] == ("/leaderboard" + str(botName)):
+            getLeaderboardFromRedis(message)
+            self.acknowledgeWebhook()
+            return
+
     groupId = str(message["chat"]["id"])
-    redisGrpId = "group_" + groupId
+    redisGrpId = "group:" + groupId
     word = redisClient.get(redisGrpId) if redisClient.get(
         redisGrpId) != None else None
 
     whenMsgWasReceived = int(message["date"])
     if word != None:
-        redisWordGrpId = word + "_" + groupId
+        redisWordGrpId = word + ":" + groupId
         wordDataObj = redisClient.hgetall(redisWordGrpId)
         whenWordWasSent = int(wordDataObj["timestamp"])
 
@@ -157,22 +163,65 @@ def handleReceivedMessage(message: dict):
 
 def setScoreOfUser(message: dict, timeDiff: int):
 
-    redisKey = "user_" + message["from"]["username"] + \
-        "_" + str(message["chat"]["id"])
+    redisKey = "user:" + message["from"]["id"] + \
+        ":" + str(message["chat"]["id"])
+
+    redisClient.hmset(
+        redisKey, {"userName": message["from"]["userName"]})
 
     if(timeDiff < 100):
         score = 10
-        redisClient.incrby(redisKey, score)
+        redisClient.hincrby(redisKey, "score", score)
 
     elif(timeDiff < 300):
         score = 5
-        redisClient.incrby(redisKey, score)
+        redisClient.hincrby(redisKey, "score", score)
 
     else:
         score = 1
-        redisClient.incrby(redisKey, score)
+        redisClient.hincrby(redisKey, "score", score)
 
 
-def startCommandHandler(update: Update, context: CallbackContext, args):
-    update.message.reply_text(
-        "Welcome to the quizzing bot")
+def getUserScoreFromRedis(message: dict):
+    userId = message["from"]["id"]
+    redisKey = "user_" + userId + \
+        "_" + str(message["chat"]["id"])
+
+    score = redisClient.hget(redisKey)
+    if score != None:
+        updater.bot.send_message(
+            message["chat"]["id"], "{name} your score is: {score}".format(name=score["userName"], score=score["score"]))
+
+
+def handleHelp(message: dict) -> None:
+    infoMsg = "👋 Welcome to the WordBot " + message["from"]["first_name"] + "! \n\n" + \
+        "WordBot will periodically send a photo containing a word to guess in your group. The user who will write the word first, will win coins. \n\n" + \
+        "• /leaderboard: shows the leaderboard of the group. \n\n" + \
+        "• /myscore: shows your score for that group."
+
+    updater.bot.send_message(
+        message["chat"]["id"], infoMsg)
+
+
+def getLeaderboardFromRedis(message: dict) -> None:
+    redisKey = "user:*:" + str(message["chat"]["id"])
+
+    userScore = dict()
+
+    for key in redisClient.scan_iter(redisKey):
+        redisData = redisClient.get(key)
+        userScore[redisData["userName"]] = redisData["score"]
+
+    sortedUserScore = sorted(
+        userScore.items(), key=lambda x: x[1], reverse=True)
+
+    leaderboardMsg = "🏆 Leaderboard 🏆 \n\n"
+
+    for i in range(0, len(sortedUserScore)):
+        leaderboardMsg += "{name} - {score} \n".format(
+            name=sortedUserScore[i][0], score=sortedUserScore[i][1])
+
+    if sortedUserScore == []:
+        leaderboardMsg += "No users yet!"
+
+    updater.bot.send_message(message["chat"]["id"], leaderboardMsg)

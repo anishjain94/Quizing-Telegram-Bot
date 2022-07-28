@@ -11,15 +11,15 @@ imageToSendPath = staticFilesPath + '/toSend.jpg'
 botToken = os.environ.get("botToken")
 webhookUrl = os.environ.get("webhookUrl")
 botId = os.environ.get("botId")
-
+botName = os.environ.get("botName")
 # Redis
 redisHost = os.environ.get("REDIS_HOST")
 redisPort = os.environ.get("REDIS_PORT")
 redisPassword = os.environ.get("REDIS_PASSWORD")
 
 
-HOST_NAME = "localhost"
-PORT_NUMBER = 8000
+HOST_NAME = os.environ.get("host", "localhost")
+PORT_NUMBER = int(os.environ.get("port", 8000))
 
 # TODO: update this.
-groupData = str(botId) + "_group_data"
+groupData = str(botId) + ":groupData"
