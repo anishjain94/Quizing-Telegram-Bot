@@ -1,78 +1,72 @@
-from cmath import log
-from http.client import RemoteDisconnected
-from http.server import BaseHTTPRequestHandler
 import json
 import time
-import redis
-import telegram
-import os
+from flask import request
 import logging as logger
 from telegram.ext import Updater
-from urllib.parse import urlparse, parse_qs
-from telegram.update import Update
-from telegram.ext.callbackcontext import CallbackContext
-from telegram.ext.commandhandler import CommandHandler
-from telegram.ext.messagehandler import MessageHandler
-from telegram.ext.filters import Filters
 
 from config.environment import *
 from api.helpers import *
 from infra.redis import redisClient
 from infra.telegram import *
 from config.constants import *
+
+
 # TODO: replace if conditions with reducer and dispatcher
 # {"group1":"-620006425","temp1":"-1001530624354"}
 
 
-class handler(BaseHTTPRequestHandler):
-
-    def acknowledgeWebhook(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
-        self.end_headers()
-
-    def do_GET(self):
-        token = str(botToken)
-        updater = Updater(token, use_context=True)
-        updater.bot.setWebhook(
-            str(webhookUrl)
-        )
-        self.acknowledgeWebhook()
-        return
-
-    def do_POST(self):
-        content_len = int(self.headers.get('Content-Length'))
-        post_body = self.rfile.read(content_len)
-        res = json.loads(post_body)
-        print(res)
-
-        if self.path == "/sendMsg":
-            sendMsg(self)
-            return
-
-        myChatMember = res.get("my_chat_member", None)
-        newChatMember = myChatMember.get(
-            "new_chat_member", None) if myChatMember != None else None
-
-        message = res.get("message", None)
-
-        if isLeftChatMember(message) != False:
-            handleRemovalFromGroup(res)
-
-        elif myChatMember != None and newChatMember["status"] == "member":
-            handleAdditionToGroup(myChatMember)
-
-        elif message != None:
-            handleReceivedMessage(self, message)
-
-        else:
-            logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
-
-        self.acknowledgeWebhook()
-        return
+def acknowledgeWebhook():
+    pass
+    # send_response(200)
+    # send_header('Content-Type', 'text/plain')
+    # end_headers()
 
 
-def sendMsg(self):
+def do_GET(self):
+    token = str(botToken)
+    updater = Updater(token, use_context=True)
+    updater.bot.setWebhook(
+        str(webhookUrl)
+    )
+    self.acknowledgeWebhook()
+    return
+
+
+def do_POST():
+    # content_len = int(self.headers.get('Content-Length'))
+    # post_body = self.rfile.read(content_len)
+    # res = json.loads(post_body)
+    # print(res)
+
+    res = request.get_json()
+    print(res)
+    # if self.path == "/sendMsg":
+    #     sendMsg(self)
+    #     return
+
+    myChatMember = res.get("my_chat_member", None)
+    newChatMember = myChatMember.get(
+        "new_chat_member", None) if myChatMember != None else None
+
+    message = res.get("message", None)
+
+    if isLeftChatMember(message) != False:
+        handleRemovalFromGroup(res)
+
+    elif myChatMember != None and newChatMember["status"] == "member":
+        handleAdditionToGroup(myChatMember)
+
+    elif message != None:
+        handleReceivedMessage(message)
+
+    else:
+        logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
+
+    acknowledgeWebhook()
+    return
+
+
+def sendMsg():
     word = getWord()
     generateImage(word)
     print(word)
@@ -92,7 +86,7 @@ def sendMsg(self):
             "count": 3, "timestamp": int(time.time())})
         redisClient.expire(redisWordGrpCount, 216000)
 
-    self.acknowledgeWebhook()
+    acknowledgeWebhook()
 
     return
 

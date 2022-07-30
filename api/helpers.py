@@ -1,8 +1,5 @@
-from cgi import print_exception
-from html import entities
 import os
 from random import randint
-from turtle import back
 import requests
 from PIL import ImageDraw
 from PIL import ImageFont

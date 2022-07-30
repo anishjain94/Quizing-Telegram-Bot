@@ -1,6 +1,5 @@
 import os
 from PIL import Image
-from telegram import Update
 
 cwd = os.path.abspath('.')
 wordsPath = cwd + '/static/words.txt'
@@ -21,5 +20,4 @@ redisPassword = os.environ.get("REDIS_PASSWORD")
 HOST_NAME = os.environ.get("host", "localhost")
 PORT_NUMBER = int(os.environ.get("port", 8000))
 
-# TODO: update this.
 groupData = str(botId) + ":groupData"
