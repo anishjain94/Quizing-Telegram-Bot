@@ -1,49 +1,29 @@
 import json
-import time
-from flask import request
 import logging as logger
-from telegram.ext import Updater
+import time
 
+from config.constants import *
 from config.environment import *
-from api.helpers import *
+from flask import request
 from infra.redis import redisClient
 from infra.telegram import *
-from config.constants import *
+from telegram.ext import Updater
+
+from api.helpers import *
 
 
-# TODO: replace if conditions with reducer and dispatcher
-# {"group1":"-620006425","temp1":"-1001530624354"}
-
-
-def acknowledgeWebhook():
-    pass
-    # send_response(200)
-    # send_header('Content-Type', 'text/plain')
-    # end_headers()
-
-
-def do_GET(self):
-    token = str(botToken)
+def setWebhook():
+    token = str(BOT_TOKEN)
     updater = Updater(token, use_context=True)
     updater.bot.setWebhook(
-        str(webhookUrl)
+        str(WEBHOOK_URL)
     )
-    self.acknowledgeWebhook()
     return
 
 
-def do_POST():
-    # content_len = int(self.headers.get('Content-Length'))
-    # post_body = self.rfile.read(content_len)
-    # res = json.loads(post_body)
-    # print(res)
-
+def handleIncomingWebhook():
     res = request.get_json()
     print(res)
-    # if self.path == "/sendMsg":
-    #     sendMsg(self)
-    #     return
-
     myChatMember = res.get("my_chat_member", None)
     newChatMember = myChatMember.get(
         "new_chat_member", None) if myChatMember != None else None
@@ -62,14 +42,12 @@ def do_POST():
     else:
         logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
 
-    acknowledgeWebhook()
     return
 
 
 def sendMsg():
     word = getWord()
     generateImage(word)
-    print(word)
     groupInfo = redisClient.hgetall(groupData)
     # Redis Keys
     # group:groupID = word
@@ -85,16 +63,13 @@ def sendMsg():
         redisClient.hmset(redisWordGrpCount, {
             "count": 3, "timestamp": int(time.time())})
         redisClient.expire(redisWordGrpCount, 216000)
-
-    acknowledgeWebhook()
-
     return
 
 
 def handleAdditionToGroup(myChatMember: dict):
     newChatMember = myChatMember.get("new_chat_member", None)
 
-    if newChatMember != None and str(newChatMember["user"]["id"]) == botId:
+    if newChatMember != None and str(newChatMember["user"]["id"]) == BOT_ID:
 
         redisClient.hset(
             groupData, myChatMember["chat"]["title"], myChatMember["chat"]["id"])
@@ -104,30 +79,26 @@ def handleRemovalFromGroup(res: dict):
     message = res.get("message", None)
     leftChatMember = res["message"]["left_chat_participant"]
 
-    if str(leftChatMember["id"]) == botId:
+    if str(leftChatMember["id"]) == BOT_ID:
         res = redisClient.hdel(
             groupData, message["chat"]["title"])
 
 
-def handleReceivedMessage(self, message: dict):
+def handleReceivedMessage(message: dict):
     if message.get("new_chat_title", None) != None:
-        self.acknowledgeWebhook(self)
         return
 
     if checkIfCommand(message):
-        if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(botName)) or message["text"] == ("/start" + str(botName)):
+        if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(BOT_NAME)) or message["text"] == ("/start" + str(BOT_NAME)):
             handleHelp(message)
-            self.acknowledgeWebhook()
             return
 
-        elif message["text"] == "/myscore" or message["text"] == ("/myscore" + str(botName)):
+        elif message["text"] == "/myscore" or message["text"] == ("/myscore" + str(BOT_NAME)):
             getUserScoreFromRedis(message)
-            self.acknowledgeWebhook()
             return
 
-        elif message["text"] == "/leaderboard" or message["text"] == ("/leaderboard" + str(botName)):
+        elif message["text"] == "/leaderboard" or message["text"] == ("/leaderboard" + str(BOT_NAME)):
             getLeaderboardFromRedis(message)
-            self.acknowledgeWebhook()
             return
         return
 

@@ -1,6 +1,6 @@
-import redis
 from config.environment import *
 
+import redis
 
 redisClient = redis.Redis(
     host=redisHost,

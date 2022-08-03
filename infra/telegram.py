@@ -1,15 +1,8 @@
+from api.helpers import *
+from config.environment import *
+
+from infra.redis import redisClient
 from telegram.ext import Updater
 
-
-from config.environment import *
-from api.helpers import *
-from infra.redis import redisClient
-
-
-token = str(botToken)
+token = str(BOT_TOKEN)
 updater = Updater(token, use_context=True)
-updater.bot.setWebhook(
-    str(webhookUrl)
-)
-
-dp = updater.dispatcher

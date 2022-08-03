@@ -1,10 +1,7 @@
-import os
 from random import randint
+
+import cv2
 import requests
-from PIL import ImageDraw
-from PIL import ImageFont
-
-
 from config.environment import *
 
 
@@ -13,6 +10,11 @@ def getWord():
     file = open(wordsPath, 'r')
     words = file.read().splitlines()
     randomIndex = randint(0, len(words))
+
+    while len(words[randomIndex]) >= 6 or len(words[randomIndex]) <= 2:
+        randomIndex = randint(0, len(words))
+
+    print(words[randomIndex])
     return words[randomIndex]
 
 
@@ -25,13 +27,12 @@ def generateWords():
         f.close()
 
 
-# Generate better imgage
 def generateImage(word):
-    I1 = ImageDraw.Draw(backgroundImg)
-    myFont = ImageFont.truetype(staticFilesPath + '/font.ttf', 30)
-    I1.text((100, 100), word, font=myFont, fill=(0, 0, 0))
-    os.remove(imageToSendPath)
-    backgroundImg.save(imageToSendPath)
+
+    img = cv2.imread(imgPath)
+    cv2.putText(img, word, (100, 130),
+                cv2.FONT_HERSHEY_DUPLEX, 2, (0, 0, 0), 2)
+    cv2.imwrite(imageToSendPath, img)
 
 
 def checkIfCommand(message) -> bool:

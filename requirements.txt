@@ -1,6 +1,6 @@
+opencv-contrib-python-headless
 python_telegram_bot
 redis
 flask
 python-dotenv
-pillow
 requests
