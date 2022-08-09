@@ -1,13 +1,16 @@
-# fly.toml file generated for quizer on 2022-08-02T21:09:55+05:30
+# fly.toml file generated for quizer-bot on 2022-08-09T23:41:55+05:30
 
-app = "quizer"
+app = "quizer-bot"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
 
+[build]
+  image = "flyio/redis:6.2.6"
+
 [env]
-  PORT = "8080"
   FLASK_APP = "main"
+  PORT = "8080"
 
 [experimental]
   allowed_public_ports = []
@@ -18,7 +21,6 @@ processes = []
   processes = ["app"]
   protocol = "tcp"
   script_checks = []
-  
   [services.concurrency]
     hard_limit = 25
     soft_limit = 20
@@ -38,3 +40,7 @@ processes = []
     interval = "15s"
     restart_limit = 0
     timeout = "2s"
+
+  [[mounts]]
+    destination = "/data"
+    source = "redis_server"
