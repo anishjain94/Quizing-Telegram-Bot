@@ -146,6 +146,8 @@ def setScoreOfUser(message: dict, timeDiff: int):
         score = 1
         redisClient.hincrby(redisKey, "score", score)
 
+    getUserScoreFromRedis(message)
+
 
 def getUserScoreFromRedis(message: dict):
     userId = str(message["from"]["id"])
