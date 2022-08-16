@@ -187,7 +187,7 @@ def getUserScoreFromRedis(message: dict):
             message["chat"]["id"], "No Score found @" + message["chat"]["username"])
     elif score != None:
         updater.bot.send_message(
-            message["chat"]["id"], scoreIs.format(name=score["username"], score=score["score"]))
+            message["chat"]["id"], scoreIs.format(name=score["userName"], score=score["score"]))
 
 
 def handleHelp(message: dict) -> None:
