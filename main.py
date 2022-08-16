@@ -7,8 +7,6 @@ load_dotenv()
 app = Flask(__name__)
 
 
-# TODO: Handle message reply on bot, and when a message is received. send a acknowlegdement to the user.
-
 @app.route("/health")
 def hello_world():
     return "Healthy."

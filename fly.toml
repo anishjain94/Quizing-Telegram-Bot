@@ -1,6 +1,6 @@
 # fly.toml file generated for quizer-bot on 2022-08-09T23:41:55+05:30
 
-app = "quizer-bot"
+app = "quizer"
 kill_signal = "SIGINT"
 kill_timeout = 5
 processes = []
@@ -40,7 +40,3 @@ processes = []
     interval = "15s"
     restart_limit = 0
     timeout = "2s"
-
-  [[mounts]]
-    destination = "/data"
-    source = "redis_server"

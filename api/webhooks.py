@@ -57,7 +57,12 @@ def sendMsg():
         # groupId = str(groupId)
         redisGrpId = "group:" + groupId
         redisWordGrpCount = word + ":" + groupId
-        updater.bot.send_photo(groupId, open(imageToSendPath, "rb"))
+        try:
+            updater.bot.send_photo(groupId, open(
+                imageToSendPath, "rb"), caption=imageCaption)
+        except Exception as e:
+            print(e)
+            continue
         redisClient.set(redisGrpId, word)
         redisClient.expire(redisGrpId, 216000)
         redisClient.hmset(redisWordGrpCount, {
@@ -109,6 +114,10 @@ def handleReceivedMessage(message: dict):
     whenMsgWasReceived = int(message["date"])
     messageReceived = message.get("text", None)
 
+    if messageReceived == None:
+        return
+
+    messageReceived = messageReceived.lower()
     if word != None and (messageReceived is not None and messageReceived == word):
         redisWordGrpId = word + ":" + groupId
         wordDataObj = redisClient.hgetall(redisWordGrpId)
@@ -134,6 +143,8 @@ def setScoreOfUser(message: dict, timeDiff: int):
     redisClient.hmset(
         redisKey, {"userName": message["from"]["username"]})
 
+    score = 1
+
     if(timeDiff < 100):
         score = 10
         redisClient.hincrby(redisKey, "score", score)
@@ -146,7 +157,22 @@ def setScoreOfUser(message: dict, timeDiff: int):
         score = 1
         redisClient.hincrby(redisKey, "score", score)
 
-    getUserScoreFromRedis(message)
+    sendSuccessMsg(message, timeDiff)
+
+
+def sendSuccessMsg(message: dict, timeDiff: int = 0):
+    userId = str(message["from"]["id"])
+    redisKey = "user:" + userId + \
+        ":" + str(message["chat"]["id"])
+
+    score = redisClient.hgetall(redisKey)
+
+    if not score:
+        updater.bot.send_message(
+            message["chat"]["id"], "No Score found @" + message["chat"]["username"])
+    elif score != None:
+        updater.bot.send_message(
+            message["chat"]["id"], successMessage.format(name=score["userName"], score=score["score"], time=minsToAns(timeDiff)))
 
 
 def getUserScoreFromRedis(message: dict):
@@ -155,9 +181,13 @@ def getUserScoreFromRedis(message: dict):
         ":" + str(message["chat"]["id"])
 
     score = redisClient.hgetall(redisKey)
-    if score != None:
+
+    if not score:
         updater.bot.send_message(
-            message["chat"]["id"], scoreIs.format(name=score["userName"], score=score["score"]))
+            message["chat"]["id"], "No Score found @" + message["chat"]["username"])
+    elif score != None:
+        updater.bot.send_message(
+            message["chat"]["id"], scoreIs.format(name=score["username"], score=score["score"]))
 
 
 def handleHelp(message: dict) -> None:
@@ -185,7 +215,7 @@ def getLeaderboardFromRedis(message: dict) -> None:
     leaderboardMsg = "🏆 Leaderboard 🏆 \n\n"
 
     for i in range(0, len(sortedUserScore)):
-        leaderboardMsg += "@{userName} - {score} \n".format(
+        leaderboardMsg += str(i + 1) + ": @{userName} your score is: {score} \n".format(
             userName=sortedUserScore[i][0], score=sortedUserScore[i][1])
 
     if sortedUserScore == []:
