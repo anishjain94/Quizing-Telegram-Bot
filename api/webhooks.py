@@ -1,81 +1,53 @@
-from cmath import log
-from http.client import RemoteDisconnected
-from http.server import BaseHTTPRequestHandler
 import json
-import time
-import redis
-import telegram
-import os
 import logging as logger
-from telegram.ext import Updater
-from urllib.parse import urlparse, parse_qs
-from telegram.update import Update
-from telegram.ext.callbackcontext import CallbackContext
-from telegram.ext.commandhandler import CommandHandler
-from telegram.ext.messagehandler import MessageHandler
-from telegram.ext.filters import Filters
+import time
 
+from config.constants import *
 from config.environment import *
-from api.helpers import *
+from flask import request
 from infra.redis import redisClient
 from infra.telegram import *
-from config.constants import *
-# TODO: replace if conditions with reducer and dispatcher
-# {"group1":"-620006425","temp1":"-1001530624354"}
+from telegram.ext import Updater
+
+from api.helpers import *
 
 
-class handler(BaseHTTPRequestHandler):
-
-    def acknowledgeWebhook(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
-        self.end_headers()
-
-    def do_GET(self):
-        token = str(botToken)
-        updater = Updater(token, use_context=True)
-        updater.bot.setWebhook(
-            str(webhookUrl)
-        )
-        self.acknowledgeWebhook()
-        return
-
-    def do_POST(self):
-        content_len = int(self.headers.get('Content-Length'))
-        post_body = self.rfile.read(content_len)
-        res = json.loads(post_body)
-        print(res)
-
-        if self.path == "/sendMsg":
-            sendMsg(self)
-            return
-
-        myChatMember = res.get("my_chat_member", None)
-        newChatMember = myChatMember.get(
-            "new_chat_member", None) if myChatMember != None else None
-
-        message = res.get("message", None)
-
-        if isLeftChatMember(message) != False:
-            handleRemovalFromGroup(res)
-
-        elif myChatMember != None and newChatMember["status"] == "member":
-            handleAdditionToGroup(myChatMember)
-
-        elif message != None:
-            handleReceivedMessage(self, message)
-
-        else:
-            logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
-
-        self.acknowledgeWebhook()
-        return
+def setWebhook():
+    token = str(BOT_TOKEN)
+    updater = Updater(token, use_context=True)
+    updater.bot.setWebhook(
+        str(WEBHOOK_URL)
+    )
+    return
 
 
-def sendMsg(self):
+def handleIncomingWebhook():
+    res = request.get_json()
+    print(res)
+    myChatMember = res.get("my_chat_member", None)
+    newChatMember = myChatMember.get(
+        "new_chat_member", None) if myChatMember != None else None
+
+    message = res.get("message", None)
+
+    if isLeftChatMember(message) != False:
+        handleRemovalFromGroup(res)
+
+    elif myChatMember != None and newChatMember["status"] == "member":
+        handleAdditionToGroup(myChatMember)
+
+    elif message != None:
+        handleReceivedMessage(message)
+
+    else:
+        logger.debug("unhandled webhook: {} ".format(json.dumps(res)))
+
+    return
+
+
+def sendMsg():
     word = getWord()
     generateImage(word)
-    print(word)
     groupInfo = redisClient.hgetall(groupData)
     # Redis Keys
     # group:groupID = word
@@ -85,22 +57,24 @@ def sendMsg(self):
         # groupId = str(groupId)
         redisGrpId = "group:" + groupId
         redisWordGrpCount = word + ":" + groupId
-        updater.bot.send_photo(groupId, open(imageToSendPath, "rb"))
+        try:
+            updater.bot.send_photo(groupId, open(
+                imageToSendPath, "rb"), caption=imageCaption)
+        except Exception as e:
+            print(e)
+            continue
         redisClient.set(redisGrpId, word)
         redisClient.expire(redisGrpId, 216000)
         redisClient.hmset(redisWordGrpCount, {
             "count": 3, "timestamp": int(time.time())})
         redisClient.expire(redisWordGrpCount, 216000)
-
-    self.acknowledgeWebhook()
-
     return
 
 
 def handleAdditionToGroup(myChatMember: dict):
     newChatMember = myChatMember.get("new_chat_member", None)
 
-    if newChatMember != None and str(newChatMember["user"]["id"]) == botId:
+    if newChatMember != None and str(newChatMember["user"]["id"]) == BOT_ID:
 
         redisClient.hset(
             groupData, myChatMember["chat"]["title"], myChatMember["chat"]["id"])
@@ -110,30 +84,26 @@ def handleRemovalFromGroup(res: dict):
     message = res.get("message", None)
     leftChatMember = res["message"]["left_chat_participant"]
 
-    if str(leftChatMember["id"]) == botId:
+    if str(leftChatMember["id"]) == BOT_ID:
         res = redisClient.hdel(
             groupData, message["chat"]["title"])
 
 
-def handleReceivedMessage(self, message: dict):
+def handleReceivedMessage(message: dict):
     if message.get("new_chat_title", None) != None:
-        self.acknowledgeWebhook(self)
         return
 
     if checkIfCommand(message):
-        if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(botName)) or message["text"] == ("/start" + str(botName)):
+        if message["text"] == "/help" or message["text"] == "/start" or message["text"] == ("/help" + str(BOT_NAME)) or message["text"] == ("/start" + str(BOT_NAME)):
             handleHelp(message)
-            self.acknowledgeWebhook()
             return
 
-        elif message["text"] == "/myscore" or message["text"] == ("/myscore" + str(botName)):
+        elif message["text"] == "/myscore" or message["text"] == ("/myscore" + str(BOT_NAME)):
             getUserScoreFromRedis(message)
-            self.acknowledgeWebhook()
             return
 
-        elif message["text"] == "/leaderboard" or message["text"] == ("/leaderboard" + str(botName)):
+        elif message["text"] == "/leaderboard" or message["text"] == ("/leaderboard" + str(BOT_NAME)):
             getLeaderboardFromRedis(message)
-            self.acknowledgeWebhook()
             return
         return
 
@@ -144,6 +114,10 @@ def handleReceivedMessage(self, message: dict):
     whenMsgWasReceived = int(message["date"])
     messageReceived = message.get("text", None)
 
+    if messageReceived == None:
+        return
+
+    messageReceived = messageReceived.lower()
     if word != None and (messageReceived is not None and messageReceived == word):
         redisWordGrpId = word + ":" + groupId
         wordDataObj = redisClient.hgetall(redisWordGrpId)
@@ -169,6 +143,8 @@ def setScoreOfUser(message: dict, timeDiff: int):
     redisClient.hmset(
         redisKey, {"userName": message["from"]["username"]})
 
+    score = 1
+
     if(timeDiff < 100):
         score = 10
         redisClient.hincrby(redisKey, "score", score)
@@ -181,6 +157,23 @@ def setScoreOfUser(message: dict, timeDiff: int):
         score = 1
         redisClient.hincrby(redisKey, "score", score)
 
+    sendSuccessMsg(message, timeDiff)
+
+
+def sendSuccessMsg(message: dict, timeDiff: int = 0):
+    userId = str(message["from"]["id"])
+    redisKey = "user:" + userId + \
+        ":" + str(message["chat"]["id"])
+
+    score = redisClient.hgetall(redisKey)
+
+    if not score:
+        updater.bot.send_message(
+            message["chat"]["id"], "No Score found @" + message["chat"]["username"])
+    elif score != None:
+        updater.bot.send_message(
+            message["chat"]["id"], successMessage.format(name=score["userName"], score=score["score"], time=minsToAns(timeDiff)))
+
 
 def getUserScoreFromRedis(message: dict):
     userId = str(message["from"]["id"])
@@ -188,7 +181,11 @@ def getUserScoreFromRedis(message: dict):
         ":" + str(message["chat"]["id"])
 
     score = redisClient.hgetall(redisKey)
-    if score != None:
+
+    if not score:
+        updater.bot.send_message(
+            message["chat"]["id"], "No Score found @" + message["chat"]["username"])
+    elif score != None:
         updater.bot.send_message(
             message["chat"]["id"], scoreIs.format(name=score["userName"], score=score["score"]))
 
@@ -218,7 +215,7 @@ def getLeaderboardFromRedis(message: dict) -> None:
     leaderboardMsg = "🏆 Leaderboard 🏆 \n\n"
 
     for i in range(0, len(sortedUserScore)):
-        leaderboardMsg += "@{userName} - {score} \n".format(
+        leaderboardMsg += str(i + 1) + ": @{userName} your score is: {score} \n".format(
             userName=sortedUserScore[i][0], score=sortedUserScore[i][1])
 
     if sortedUserScore == []:

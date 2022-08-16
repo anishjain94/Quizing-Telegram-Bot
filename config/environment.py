@@ -1,17 +1,15 @@
 import os
-from PIL import Image
-from telegram import Update
 
 cwd = os.path.abspath('.')
 wordsPath = cwd + '/static/words.txt'
 staticFilesPath = cwd + '/static'
-backgroundImg = Image.open(staticFilesPath + '/background.jpg')
+imgPath = staticFilesPath + '/background.jpg'
 imageToSendPath = staticFilesPath + '/toSend.jpg'
 
-botToken = os.environ.get("botToken")
-webhookUrl = os.environ.get("webhookUrl")
-botId = os.environ.get("botId")
-botName = os.environ.get("botName")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+BOT_ID = os.environ.get("BOT_ID")
+BOT_NAME = os.environ.get("BOT_NAME")
 # Redis
 redisHost = os.environ.get("REDIS_HOST")
 redisPort = os.environ.get("REDIS_PORT")
@@ -21,5 +19,4 @@ redisPassword = os.environ.get("REDIS_PASSWORD")
 HOST_NAME = os.environ.get("host", "localhost")
 PORT_NUMBER = int(os.environ.get("port", 8000))
 
-# TODO: update this.
-groupData = str(botId) + ":groupData"
+groupData = str(BOT_ID) + ":groupData"

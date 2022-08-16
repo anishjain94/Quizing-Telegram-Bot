@@ -1,11 +1,7 @@
-from cgi import print_exception
-from html import entities
-import os
 from random import randint
-from turtle import back
+from datetime import datetime
+import cv2
 import requests
-from PIL import ImageDraw
-from PIL import ImageFont
 
 
 from config.environment import *
@@ -16,7 +12,12 @@ def getWord():
     file = open(wordsPath, 'r')
     words = file.read().splitlines()
     randomIndex = randint(0, len(words))
-    return words[randomIndex]
+
+    while len(words[randomIndex]) >= 7 or len(words[randomIndex]) <= 3:
+        randomIndex = randint(0, len(words))
+
+    print(words[randomIndex])
+    return words[randomIndex].lower()
 
 
 def generateWords():
@@ -28,13 +29,22 @@ def generateWords():
         f.close()
 
 
-# Generate better imgage
 def generateImage(word):
-    I1 = ImageDraw.Draw(backgroundImg)
-    myFont = ImageFont.truetype(staticFilesPath + '/font.ttf', 30)
-    I1.text((100, 100), word, font=myFont, fill=(0, 0, 0))
-    os.remove(imageToSendPath)
-    backgroundImg.save(imageToSendPath)
+
+    img = cv2.imread(imgPath)
+    if len(word) == 4:
+        cv2.putText(img, word, (140, 130),
+                    cv2.FORMATTER_FMT_PYTHON, 1, (0, 0, 0), 2)
+
+    if len(word) == 5:
+        cv2.putText(img, word, (133, 130),
+                    cv2.FORMATTER_FMT_CSV, 1, (0, 0, 0), 2)
+
+    if len(word) == 6:
+        cv2.putText(img, word, (127, 130),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+
+    cv2.imwrite(imageToSendPath, img)
 
 
 def checkIfCommand(message) -> bool:
@@ -53,3 +63,12 @@ def isLeftChatMember(message: dict) -> bool:
         return False
     else:
         return True
+
+
+def minsToAns(seconds: int) -> str:
+    seconds = seconds % (24 * 3600)
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+
+    return "%02dm %02ds" % (minutes, seconds)
