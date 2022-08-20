@@ -15,8 +15,10 @@ from api.helpers import *
 def setWebhook():
     token = str(BOT_TOKEN)
     updater = Updater(token, use_context=True)
+    res = request.get_json()
+    webhookUrl = res.get("webhook_url", None)
     updater.bot.setWebhook(
-        str(WEBHOOK_URL)
+        webhookUrl
     )
     return
 
@@ -128,7 +130,7 @@ def handleReceivedMessage(message: dict):
             wordDataObj["count"] -= 1
             redisClient.hmset(redisWordGrpId, wordDataObj)
 
-            setScoreOfUser(message, whenWordWasSent - whenMsgWasReceived)
+            setScoreOfUser(message, whenMsgWasReceived - whenWordWasSent)
 
             if wordDataObj["count"] <= 1:
                 redisClient.delete(redisWordGrpId)
@@ -166,7 +168,7 @@ def sendSuccessMsg(message: dict, timeDiff: int = 0):
         ":" + str(message["chat"]["id"])
 
     score = redisClient.hgetall(redisKey)
-
+    print(score)
     if not score:
         updater.bot.send_message(
             message["chat"]["id"], "No Score found @" + message["chat"]["username"])
@@ -181,7 +183,7 @@ def getUserScoreFromRedis(message: dict):
         ":" + str(message["chat"]["id"])
 
     score = redisClient.hgetall(redisKey)
-
+    print(score)
     if not score:
         updater.bot.send_message(
             message["chat"]["id"], "No Score found @" + message["chat"]["username"])
@@ -207,6 +209,7 @@ def getLeaderboardFromRedis(message: dict) -> None:
 
     for key in redisClient.scan_iter(redisKey):
         redisData = redisClient.hgetall(key)
+        print(redisData)
         userScore[redisData["userName"]] = redisData["score"]
 
     sortedUserScore = sorted(
