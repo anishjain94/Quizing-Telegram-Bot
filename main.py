@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 @app.route("/health")
 def hello_world():
-    return "Healthy."
+    return "Healthy. V.39"
 
 
 @app.route("/", methods=['POST'])
