@@ -2,6 +2,7 @@ from random import randint
 from datetime import datetime
 import cv2
 import requests
+from PIL import Image, ImageDraw, ImagePath, ImageFont
 
 
 from config.environment import *
@@ -17,7 +18,7 @@ def getWord():
         randomIndex = randint(0, len(words))
 
     print(words[randomIndex])
-    return words[randomIndex].lower()
+    return (words[randomIndex].lower()).capitalize()
 
 
 def generateWords():
@@ -29,22 +30,20 @@ def generateWords():
         f.close()
 
 
-def generateImage(word):
+def create_image(size, message, font, fontColor):
+    W, H = size
+    image = Image.open(imgPath)
+    draw = ImageDraw.Draw(image)
 
-    img = cv2.imread(imgPath)
-    if len(word) == 4:
-        cv2.putText(img, word, (140, 130),
-                    cv2.FORMATTER_FMT_PYTHON, 1, (0, 0, 0), 2)
+    w, h = draw.textsize(message, font=font)
+    draw.text(((W-w)/2, (H-h)/2), message, font=font, fill=fontColor)
+    return image
 
-    if len(word) == 5:
-        cv2.putText(img, word, (133, 130),
-                    cv2.FORMATTER_FMT_CSV, 1, (0, 0, 0), 2)
 
-    if len(word) == 6:
-        cv2.putText(img, word, (127, 130),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-
-    cv2.imwrite(imageToSendPath, img)
+def generateImage(myMessage: str):
+    myFont = ImageFont.truetype(fontPath, 200)
+    myImage = create_image((1950, 1050), myMessage, myFont, '#a5a58d')
+    myImage.save(imageToSendPath, "PNG")
 
 
 def checkIfCommand(message) -> bool:
