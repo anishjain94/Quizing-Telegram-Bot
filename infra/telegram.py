@@ -1,7 +1,5 @@
-from api.helpers import *
 from config.environment import *
-
-from infra.redis import redisClient
+from api.helpers import *
 from telegram.ext import Updater
 
 token = str(BOT_TOKEN)

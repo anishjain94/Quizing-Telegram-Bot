@@ -3,8 +3,9 @@ import os
 cwd = os.path.abspath('.')
 wordsPath = cwd + '/static/words.txt'
 staticFilesPath = cwd + '/static'
-imgPath = staticFilesPath + '/background.jpg'
-imageToSendPath = staticFilesPath + '/toSend.jpg'
+imgPath = staticFilesPath + '/background.png'
+imageToSendPath = staticFilesPath + '/toSend.png'
+fontPath = staticFilesPath + '/font.ttf'
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")

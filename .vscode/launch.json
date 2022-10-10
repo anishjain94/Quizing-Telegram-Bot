@@ -5,14 +5,6 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Server",
-      "type": "python",
-      "request": "launch",
-      "program": "main.py",
-      "console": "integratedTerminal",
-      "justMyCode": true
-    },
-    {
       "name": "Python: Flask",
       "type": "python",
       "request": "launch",
@@ -27,8 +19,21 @@
         "--no-debugger",
         "--no-reload",
         "--host=0.0.0.0",
-        "--port=8000"
+        "--port=8080"
       ],
+      "jinja": true
+    },
+    {
+      "name": "Python: waitress-serve",
+      "type": "python",
+      "request": "launch",
+      "module": "waitress-serve",
+      "env": {
+        "FLASK_APP": "main.py",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "args": ["main:app"],
       "jinja": true
     },
     {
