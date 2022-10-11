@@ -42,7 +42,7 @@ def create_image(size, message, font, fontColor):
 
 def generateImage(myMessage: str):
     myFont = ImageFont.truetype(fontPath, 200)
-    myImage = create_image((1950, 1050), myMessage, myFont, '#a5a58d')
+    myImage = create_image((1900, 1050), myMessage, myFont, '#a5a58d')
     myImage.save(imageToSendPath, "PNG")
 
 
