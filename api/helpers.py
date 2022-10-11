@@ -1,8 +1,8 @@
 from random import randint
-from datetime import datetime
-import cv2
 import requests
-from PIL import Image, ImageDraw, ImagePath, ImageFont
+from PIL import Image, ImageDraw, ImageFont
+
+from time import sleep
 
 
 from config.environment import *
@@ -18,6 +18,10 @@ def getWord():
         randomIndex = randint(0, len(words))
 
     print(words[randomIndex])
+    sleepTimer = randint(0, 1800)
+    print(sleepTimer)
+    sleep(sleepTimer)
+
     return (words[randomIndex].lower()).capitalize()
 
 
