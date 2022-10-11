@@ -1,8 +1,8 @@
 from random import randint
-from datetime import datetime
-import cv2
 import requests
-from PIL import Image, ImageDraw, ImagePath, ImageFont
+from PIL import Image, ImageDraw, ImageFont
+
+from time import sleep
 
 
 from config.environment import *
@@ -18,6 +18,10 @@ def getWord():
         randomIndex = randint(0, len(words))
 
     print(words[randomIndex])
+    sleepTimer = randint(0, 1800)
+    print(sleepTimer)
+    sleep(sleepTimer)
+
     return (words[randomIndex].lower()).capitalize()
 
 
@@ -42,7 +46,7 @@ def create_image(size, message, font, fontColor):
 
 def generateImage(myMessage: str):
     myFont = ImageFont.truetype(fontPath, 200)
-    myImage = create_image((1950, 1050), myMessage, myFont, '#a5a58d')
+    myImage = create_image((1900, 1050), myMessage, myFont, '#a5a58d')
     myImage.save(imageToSendPath, "PNG")
 
 

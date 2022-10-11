@@ -8,7 +8,6 @@ from flask import request
 from infra.redis import redisClient
 from infra.telegram import *
 from telegram.ext import Updater
-
 from api.helpers import *
 
 
@@ -48,6 +47,7 @@ def handleIncomingWebhook():
 
 
 def sendMsg():
+    print("starting timer")
     word = getWord()
     generateImage(word)
     groupInfo = redisClient.hgetall(groupData)
