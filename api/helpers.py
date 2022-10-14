@@ -18,11 +18,10 @@ def getWord():
         randomIndex = randint(0, len(words))
 
     print(words[randomIndex])
-    sleepTimer = randint(0, 1800)
-    print(sleepTimer)
+    sleepTimer = randint(0, 1000)
     sleep(sleepTimer)
 
-    return (words[randomIndex].lower()).capitalize()
+    return (words[randomIndex].capitalize())
 
 
 def generateWords():

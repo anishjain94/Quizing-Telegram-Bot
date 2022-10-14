@@ -119,7 +119,6 @@ def handleReceivedMessage(message: dict):
     if messageReceived == None:
         return
 
-    messageReceived = messageReceived.lower()
     if word != None and (messageReceived is not None and messageReceived == word):
         redisWordGrpId = word + ":" + groupId
         wordDataObj = redisClient.hgetall(redisWordGrpId)
@@ -159,22 +158,22 @@ def setScoreOfUser(message: dict, timeDiff: int):
         score = 1
         redisClient.hincrby(redisKey, "score", score)
 
-    sendSuccessMsg(message, timeDiff)
+    sendSuccessMsg(message, timeDiff, score)
 
 
-def sendSuccessMsg(message: dict, timeDiff: int = 0):
-    userId = str(message["from"]["id"])
-    redisKey = "user:" + userId + \
-        ":" + str(message["chat"]["id"])
+def sendSuccessMsg(message: dict, timeDiff: int = 0, score: int = 0):
+    # userId = str(message["from"]["id"])
+    # redisKey = "user:" + userId + \
+    #     ":" + str(message["chat"]["id"])
 
-    score = redisClient.hgetall(redisKey)
-    print(score)
-    if not score:
+    # userData = redisClient.hgetall(redisKey)
+    # print(score)
+    # if not score:
+    #     updater.bot.send_message(
+    #         message["chat"]["id"], "No Score found @" + message["chat"]["username"])
+    if score != 0:
         updater.bot.send_message(
-            message["chat"]["id"], "No Score found @" + message["chat"]["username"])
-    elif score != None:
-        updater.bot.send_message(
-            message["chat"]["id"], successMessage.format(name=score["userName"], score=score["score"], time=minsToAns(timeDiff)))
+            message["chat"]["id"], successMessage.format(name=message["from"]["username"], score=str(score), time=minsToAns(timeDiff)))
 
 
 def getUserScoreFromRedis(message: dict):
